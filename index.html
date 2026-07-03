@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SUPER MARKET GORO & FILLES</title>
+    <title>GORO PRESTIGE</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -45,7 +45,7 @@
 
     <nav class="animate-navbar sticky top-0 z-50 border-b-4 border-[#a3e635] p-4 flex justify-between items-center shadow-md">
         <div class="flex flex-col overflow-hidden w-full mr-4">
-            <h1 class="text-xl font-black tracking-tighter uppercase lime-shine-text">SUPER MARKET GORO & FILLES</h1>
+            <h1 class="text-xl font-black tracking-tighter uppercase lime-shine-text">GORO PRESTIGE</h1>
             <div class="w-full overflow-hidden whitespace-nowrap mt-0.5">
                 <marquee class="text-[12px] text-[#38bdf8] font-black uppercase tracking-wide">
                     ✨ Bienvenue ! Profitez d'une remise automatique de 3% sur l'ensemble de votre panier aujourd'hui ! ✨
@@ -259,10 +259,10 @@
             
             try {
                 window.speechSynthesis.cancel();
-                let text = "Bienvenue chez Super Market Goro et Filles ! Profitez d'une remise automatique de 3% sur l'ensemble de votre panier aujourd'hui !";
+                let text = "Bienvenue chez Goro Prestige ! Profitez d'une remise automatique de 3% sur l'ensemble de votre panier aujourd'hui !";
                 
                 if (mode === "order") {
-                    text = "Merci pour votre confiance ! Préparation de votre commande finale chez Super Market Goro et Filles.";
+                    text = "Merci pour votre confiance ! Préparation de votre commande finale chez Goro Prestige.";
                 } else if (mode === "detail" && customText !== "") {
                     text = customText;
                 }
@@ -467,7 +467,7 @@
                 if (itemTime > limitTime) {
                     newsProducts.push(p);
                 } else {
-                    oldProducts.push(p); oldProducts.push(p);
+                    oldProducts.push(p);
                 }
             });
 
@@ -621,7 +621,7 @@
             const deliveryLabel = deliverySelect.options[deliverySelect.selectedIndex].text;
             const deliveryFee = parseFloat(deliverySelect.value);
 
-            let message = `🌟 *SUPER MARKET GORO & FILLES* 🌟\n\n👤 *Client :* ${clientName}\n━━━━━━━━━━━━━━━\n\n`;
+            let message = `🌟 *GORO PRESTIGE* 🌟\n\n👤 *Client :* ${clientName}\n━━━━━━━━━━━━━━━\n\n`;
             let subtotal = 0;
 
             Object.values(cart).forEach(item => {
