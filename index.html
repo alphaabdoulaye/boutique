@@ -171,6 +171,16 @@
 
     <main class="max-w-xl mx-auto px-4 mt-6 space-y-8">
         
+        <div id="loading-zone" class="bg-white p-4 rounded-2xl border border-pink-100 shadow-sm space-y-2">
+            <div class="flex justify-between items-center text-xs font-bold text-pink-600">
+                <span id="loading-status">🔄 Ouverture des rayons...</span>
+                <span id="loading-percentage">0%</span>
+            </div>
+            <div class="w-full bg-gray-100 h-3 rounded-full overflow-hidden border border-gray-200">
+                <div id="loading-bar" class="bg-gradient-to-r from-pink-500 to-purple-600 h-full w-0 transition-all duration-300"></div>
+            </div>
+        </div>
+        
         <div id="section-news" class="hidden">
             <div class="flex items-center gap-2 mb-3">
                 <span class="flex h-3 w-3 relative">
@@ -184,9 +194,7 @@
 
         <div>
             <h2 id="title-all-products" class="text-base font-black uppercase tracking-tight text-gray-700 mb-3">🛍️ Nos Articles</h2>
-            <div id="products-container" class="grid grid-cols-2 gap-4">
-                <p class="col-span-full text-center text-gray-400 py-12 font-medium">Chargement des rayons...</p>
-            </div>
+            <div id="products-container" class="grid grid-cols-2 gap-4"></div>
         </div>
         
     </main>
@@ -439,12 +447,71 @@
             `;
         }
 
-        function filterProducts() {
-            const query = document.getElementById('search-bar').value.toLowerCase().trim();
+        // Fonction optimisée pour charger un par un les articles sur l'écran
+        async function renderProgressively(filteredArray) {
             const containerAll = document.getElementById('products-container');
             const containerNews = document.getElementById('news-container');
             const sectionNews = document.getElementById('section-news');
+            const loadingZone = document.getElementById('loading-zone');
+            const loadingBar = document.getElementById('loading-bar');
+            const loadingPercentage = document.getElementById('loading-percentage');
+            const loadingStatus = document.getElementById('loading-status');
 
+            containerAll.innerHTML = "";
+            containerNews.innerHTML = "";
+            
+            if (filteredArray.length === 0) {
+                containerAll.innerHTML = `<p class="col-span-full text-center text-gray-400 py-12">Aucun article ne correspond à votre recherche.</p>`;
+                sectionNews.classList.add('hidden');
+                loadingZone.classList.add('hidden');
+                return;
+            }
+
+            loadingZone.classList.remove('hidden');
+            sectionNews.classList.add('hidden');
+
+            const limitTime = Date.now() - (72 * 60 * 60 * 1000);
+            let totalToRender = filteredArray.length;
+            let currentRendered = 0;
+
+            // Chargement par petits morceaux asynchrones pour un effet fluide un par un
+            for (let i = 0; i < filteredArray.length; i++) {
+                const p = filteredArray[i];
+                const cardHtml = generateProductCardHtml(p);
+                const itemTime = p.created_at ? new Date(p.created_at).getTime() : p.id * 1000;
+
+                if (itemTime > limitTime) {
+                    sectionNews.classList.remove('hidden');
+                    containerNews.insertAdjacentHTML('beforeend', cardHtml);
+                    document.getElementById('title-all-products').innerText = "🛍️ Le Reste du Catalogue";
+                } else {
+                    containerAll.insertAdjacentHTML('beforeend', cardHtml);
+                }
+
+                currentRendered++;
+                let pct = Math.round((currentRendered / totalToRender) * 100);
+                loadingBar.style.width = `${pct}%`;
+                loadingPercentage.innerText = `${pct}%`;
+                loadingStatus.innerText = `⚡ Affichage : ${currentRendered} / ${totalToRender} articles`;
+
+                // Pause de quelques millisecondes pour laisser le temps au téléphone d'afficher l'article
+                await new Promise(resolve => setTimeout(resolve, 15));
+            }
+
+            // Masquer proprement la barre après chargement complet
+            setTimeout(() => {
+                loadingZone.classList.add('hidden');
+            }, 800);
+
+            // Synchroniser les quantités du panier sur les nouveaux boutons injectés
+            Object.keys(cart).forEach(id => {
+                const qtyEls = document.querySelectorAll(`[id="qty-${id}"]`);
+                qtyEls.forEach(el => el.innerText = cart[id].qty);
+            });
+        }
+
+        function filterProducts() {
+            const query = document.getElementById('search-bar').value.toLowerCase().trim();
             let filtered = allProductsRaw.filter(p => {
                 const matchQuery = p.name.toLowerCase().includes(query) || p.category.toLowerCase().includes(query);
                 const matchCat = (filterCategory === 'Tous' || p.category === filterCategory);
@@ -452,46 +519,7 @@
                 return matchQuery && matchCat && matchPrice;
             });
 
-            if (filtered.length === 0) {
-                containerAll.innerHTML = `<p class="col-span-full text-center text-gray-400 py-12">Aucun article ne correspond à votre recherche.</p>`;
-                sectionNews.classList.add('hidden');
-                return;
-            }
-
-            const limitTime = Date.now() - (72 * 60 * 60 * 1000);
-            let newsProducts = [];
-            let oldProducts = [];
-
-            filtered.forEach(p => {
-                const itemTime = p.created_at ? new Date(p.created_at).getTime() : p.id * 1000; 
-                if (itemTime > limitTime) {
-                    newsProducts.push(p);
-                } else {
-                    oldProducts.push(p);
-                }
-            });
-
-            if (newsProducts.length > 0) {
-                sectionNews.classList.remove('hidden');
-                containerNews.innerHTML = newsProducts.map(p => generateProductCardHtml(p)).join('');
-                document.getElementById('title-all-products').innerText = "🛍️ Le Reste du Catalogue";
-            } else {
-                sectionNews.classList.add('hidden');
-                document.getElementById('title-all-products').innerText = "🛍️ Nos Articles";
-            }
-
-            if (oldProducts.length > 0) {
-                containerAll.innerHTML = oldProducts.map(p => generateProductCardHtml(p)).join('');
-            } else if (newsProducts.length > 0) {
-                containerAll.innerHTML = `<p class="col-span-full text-center text-gray-400 py-4 text-xs">Tous les articles correspondants sont affichés dans les nouveautés ! 🔥</p>`;
-            } else {
-                containerAll.innerHTML = `<p class="col-span-full text-center text-gray-400 py-12">Aucun article.</p>`;
-            }
-
-            Object.keys(cart).forEach(id => {
-                const qtyEls = document.querySelectorAll(`[id="qty-${id}"]`);
-                qtyEls.forEach(el => el.innerText = cart[id].qty);
-            });
+            renderProgressively(filtered);
         }
 
         async function loadProducts() {
