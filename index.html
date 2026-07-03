@@ -211,11 +211,9 @@
         let isDarkMode = false;
         const SECRET_ADMIN_CODE = "090793"; 
 
-        // Variables de gestion de la synthèse vocale
         let totalProductsCount = 0;
         let hasWelcomed = false;
 
-        // 🟢 COMPTE À REBOURS (2H15)
         let duration = 2 * 3600 + 15 * 60;
         setInterval(() => {
             let hrs = Math.floor(duration / 3600).toString().padStart(2, '0');
@@ -225,7 +223,6 @@
             if(duration > 0) duration--;
         }, 1000);
 
-        // 🟢 SUIVI VISITEURS
         async function trackVisitor() {
             try {
                 if (!sessionStorage.getItem('visited')) {
@@ -248,7 +245,6 @@
             setTimeout(() => el.className = "hidden", 4000);
         }
 
-        // 🟢 NETTOYEUR INTELLIGENT DE TEXTE (Filtre émojis, astérisques et caractères spéciaux)
         function cleanTextForSpeech(text) {
             if (!text) return "";
             return text
@@ -258,13 +254,11 @@
                 .trim();
         }
 
-        // 🟢 AUDIO : SYNTHÈSE VOCALE FILTRÉE (VITESSE CONFIGURÉE À 0.9 & PITCH À 0.9)
         function speakWelcomeMessage(mode = "welcome", customText = "") {
             if (mode === "welcome" && hasWelcomed) return; 
             
             try {
                 window.speechSynthesis.cancel();
-
                 let text = "Bienvenue chez Super Market Goro et Filles ! Profitez d'une remise automatique de 3% sur l'ensemble de votre panier aujourd'hui !";
                 
                 if (mode === "order") {
@@ -274,26 +268,20 @@
                 }
 
                 let cleanedText = cleanTextForSpeech(text);
-
                 const utterance = new SpeechSynthesisUtterance(cleanedText);
                 utterance.lang = 'fr-FR'; 
-                utterance.rate = 0.9;     // Vitesse parfaite demandée
-                utterance.pitch = 0.9;    // Équilibré et moins grave
+                utterance.rate = 0.9;     
+                utterance.pitch = 0.9;    
                 
                 window.speechSynthesis.speak(utterance);
-                
                 if (mode === "welcome") hasWelcomed = true; 
-            } catch (e) {
-                console.log("Erreur de synthèse vocale :", e);
-            }
+            } catch (e) {}
         }
 
-        // Déclencheur au clic
         document.body.addEventListener('click', () => {
             speakWelcomeMessage("welcome");
         }, { once: false });
 
-        // 🟢 MODE SOMBRE
         function toggleDarkMode() {
             isDarkMode = !isDarkMode;
             const body = document.querySelector('.id-theme-body');
@@ -306,7 +294,6 @@
             }
         }
 
-        // 🟢 NAVIGATION ADMIN
         function toggleAdmin() {
             const panel = document.getElementById('admin-panel');
             if (!isAdminConnected) {
@@ -334,7 +321,6 @@
             });
         }
 
-        // 🟢 SAUVEGARDE ET EDITIONS
         async function saveProduct() {
             const id = document.getElementById('p-edit-id').value;
             const name = document.getElementById('p-name').value;
@@ -343,7 +329,6 @@
             if (!name || !price) { showNotification("Veuillez remplir le nom et le prix ⚠️", false); return; }
 
             showNotification("Traitement en cours...", true);
-
             let payload = { name, price, category };
 
             const fMain = document.getElementById('p-file-main').files[0];
@@ -399,7 +384,6 @@
             }
         }
 
-        // 🟢 RECHERCHE ET FILTRES VISUELS
         function setFilterCategory(cat) {
             filterCategory = cat;
             const buttons = document.querySelectorAll('.id-filter-btn');
@@ -424,7 +408,6 @@
             filterProducts();
         }
 
-        // 🚀 ACCÉLÉRATION : Intégration de loading="lazy" sur la carte produit
         function generateProductCardHtml(p) {
             const mainPhoto = p.img_main || p.img;
             return `
@@ -484,7 +467,7 @@
                 if (itemTime > limitTime) {
                     newsProducts.push(p);
                 } else {
-                    oldProducts.push(p);
+                    oldProducts.push(p); oldProducts.push(p);
                 }
             });
 
@@ -518,7 +501,6 @@
                     playNotificationSound();
                     showNotification("🔥 Un nouvel article vient d'être ajouté ! Regardez dans les nouveautés.");
                 }
-
                 totalProductsCount = data.length;
                 allProductsRaw = data; 
                 filterProducts(); 
@@ -550,14 +532,12 @@
             } catch (e) {}
         }
 
-        // 🟢 CARROUSEL DÉTAILS AVEC LECTURE VOCALE SANS SYMBOLE + CONSIGNE DE DÉFILEMENT IMAGES
         function openDetailModal(id) {
             const product = allProductsRaw.find(p => p.id === id); if (!product) return;
             document.getElementById('detail-name').innerText = product.name;
             document.getElementById('detail-category').innerText = product.category;
             document.getElementById('detail-price').innerText = product.price.toLocaleString() + " FCFA";
             
-            // 🚀 ACCÉLÉRATION : Ajout de loading="lazy" sur toutes les images secondaires du carrousel
             const mainPhoto = product.img_main || product.img;
             let imagesHtml = `<img src="${mainPhoto}" loading="lazy" class="h-full w-full object-cover rounded-xl snap-start shrink-0">`;
             if(product.img_detail1) imagesHtml += `<img src="${product.img_detail1}" loading="lazy" class="h-full w-full object-cover rounded-xl snap-start shrink-0">`;
@@ -567,7 +547,6 @@
             document.getElementById('detail-images-container').innerHTML = imagesHtml;
             document.getElementById('detail-modal').classList.remove('hidden');
 
-            // 🎙️ TEXTE AUDIO NETTOYÉ (Nom + Prix + Consigne de défilement)
             const textToSpeak = `Article : ${product.name}. Prix : ${product.price.toLocaleString()} Francs CÉFA. Vous pouvez faire défiler les photos vers la droite pour voir les autres angles de l'article.`;
             speakWelcomeMessage("detail", textToSpeak);
         }
@@ -577,7 +556,6 @@
             document.getElementById('detail-modal').classList.add('hidden'); 
         }
 
-        // 🟢 PANIER ET REMISE AUTOMATIQUE DE 3%
         function changeQtyInCart(id, change) {
             const prod = allProductsRaw.find(p => p.id === id); if (!prod) return;
             updateCart(id, prod.name, prod.price, change);
@@ -626,9 +604,7 @@
                 showNotification("Votre panier est vide 🛒", false); 
                 return; 
             } 
-            
             speakWelcomeMessage("order"); 
-            
             document.getElementById('client-modal').classList.remove('hidden'); 
         }
         
@@ -637,7 +613,6 @@
             document.getElementById('client-modal').classList.add('hidden'); 
         }
 
-        // 🟢 EXPÉDITION DU BON WHATSAPP
         function confirmAndSend() {
             const clientName = document.getElementById('client-name').value.trim();
             if (!clientName) { alert("Veuillez entrer votre nom pour la livraison."); return; }
@@ -669,7 +644,6 @@
             window.open(`https://api.whatsapp.com/send?phone=${monNumero}&text=${encodeURIComponent(message)}`, '_blank');
         }
 
-        // 🟢 INITIALISATION ET REFRESH AUTOMATIQUE
         trackVisitor();
         loadProducts();
 
