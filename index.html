@@ -9,42 +9,31 @@
     <style>
         .product-card { transition: transform 0.2s ease; cursor: pointer; }
         .product-card:hover { transform: translateY(-2px); }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="bg-[#fdf6f9] text-gray-900 font-sans pb-44 id-theme-body">
+<body class="bg-[#fdf6f9] text-gray-900 font-sans pb-44">
 
-    <nav class="bg-purple-900 sticky top-0 z-50 border-b-4 border-[#a3e635] p-4 flex justify-between items-center shadow-md">
-        <div class="flex flex-col w-full mr-4">
-            <h1 class="text-xl font-black tracking-tighter uppercase text-[#a3e635]">GORO PRESTIGE</h1>
-        </div>
-        <div class="flex items-center gap-2 shrink-0">
-            <button onclick="toggleAdmin()" id="admin-btn" class="bg-[#a3e635] text-purple-950 px-3 py-2 rounded-full text-xs font-black uppercase tracking-wider">⚙️ Admin</button>
-        </div>
+    <nav class="bg-purple-900 p-4 flex justify-between items-center shadow-md">
+        <h1 class="text-xl font-black uppercase text-[#a3e635]">GORO PRESTIGE</h1>
+        <button onclick="toggleAdmin()" id="admin-btn" class="bg-[#a3e635] text-purple-950 px-3 py-2 rounded-full text-xs font-black uppercase">⚙️ Admin</button>
     </nav>
 
     <div id="admin-panel" class="hidden max-w-md mx-auto m-4 p-6 bg-white rounded-3xl border-2 border-pink-400 shadow-xl">
-        <h2 id="admin-form-title" class="text-lg font-bold text-gray-900 mb-4">📦 Ajouter un nouveau produit</h2>
-        <div class="space-y-4">
-            <input type="hidden" id="p-edit-id">
-            <input type="text" id="p-name" placeholder="Nom de l'article" class="w-full p-3 border rounded-xl outline-none">
-            <input type="number" id="p-price" placeholder="Prix (FCFA)" class="w-full p-3 border rounded-xl outline-none">
-            <select id="p-category" class="w-full p-3 border rounded-xl outline-none">
-                <option value="Chaussures">Chaussures</option>
-                <option value="Habits">Habits</option>
-                <option value="Sacs">Sacs</option>
-                <option value="Accessoires">Accessoires</option>
-            </select>
-            <div class="border rounded-xl p-3 bg-gray-50">
-                <label class="block text-xs font-black text-pink-600 uppercase mb-1">📸 Photo du produit</label>
-                <input type="file" id="p-file-main" accept="image/*" class="w-full text-xs text-gray-500">
-            </div>
-            <button onclick="saveProduct()" id="btn-submit-product" class="w-full bg-pink-500 text-white font-bold py-3.5 rounded-xl">🚀 Mettre en ligne</button>
-        </div>
+        <h2 class="text-lg font-bold mb-4">📦 Ajouter un produit</h2>
+        <input type="hidden" id="p-edit-id">
+        <input type="text" id="p-name" placeholder="Nom" class="w-full p-3 border rounded-xl mb-3">
+        <input type="number" id="p-price" placeholder="Prix (FCFA)" class="w-full p-3 border rounded-xl mb-3">
+        <select id="p-category" class="w-full p-3 border rounded-xl mb-3">
+            <option value="Chaussures">Chaussures</option>
+            <option value="Habits">Habits</option>
+            <option value="Sacs">Sacs</option>
+            <option value="Accessoires">Accessoires</option>
+        </select>
+        <input type="file" id="p-file-main" accept="image/*" class="w-full mb-4">
+        <button onclick="saveProduct()" class="w-full bg-pink-500 text-white font-bold py-3.5 rounded-xl">🚀 Mettre en ligne</button>
     </div>
 
-    <main class="max-w-xl mx-auto px-4 mt-6 space-y-6">
+    <main class="max-w-xl mx-auto px-4 mt-6">
         <div id="products-container" class="grid grid-cols-2 gap-4"></div>
     </main>
 
@@ -53,70 +42,52 @@
         const SUPABASE_KEY = "sb_publishable_xySjlB_pVZ0uSPIQoojlrw_Su6avPpd";
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // --- NOUVELLE FONCTION D'UPLOAD ---
+        // Upload vers le bucket "product-images" (en minuscules)
         async function uploadToStorage(file) {
             if (!file) return null;
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${Date.now()}.${fileExt}`;
-            const filePath = `produits/${fileName}`;
-
+            const fileName = `${Date.now()}_${file.name}`;
             const { data, error } = await _supabase.storage
-                .from('PRODUCT-IMAGES')
-                .upload(filePath, file);
+                .from('product-images')
+                .upload(fileName, file);
 
             if (error) throw error;
             
             const { data: { publicUrl } } = _supabase.storage
-                .from('PRODUCT-IMAGES')
-                .getPublicUrl(filePath);
+                .from('product-images')
+                .getPublicUrl(fileName);
             return publicUrl;
         }
 
-        // --- FONCTION SAVEPRODUCT CORRIGÉE ---
         async function saveProduct() {
-            const id = document.getElementById('p-edit-id').value;
             const name = document.getElementById('p-name').value;
             const price = parseFloat(document.getElementById('p-price').value);
             const category = document.getElementById('p-category').value;
+            const fMain = document.getElementById('p-file-main').files[0];
             
-            if (!name || !price) { alert("Veuillez remplir le nom et le prix"); return; }
+            if (!name || !price || !fMain) { alert("Remplissez tout et choisissez une image !"); return; }
 
-            alert("Upload en cours...");
+            alert("Upload en cours, patientez...");
 
             try {
-                let payload = { name, price, category };
-                const fMain = document.getElementById('p-file-main').files[0];
+                const imageUrl = await uploadToStorage(fMain);
+                const { error } = await _supabase.from('products').insert([
+                    { name, price, category, img_main: imageUrl }
+                ]);
 
-                if (fMain) {
-                    payload.img_main = await uploadToStorage(fMain);
-                }
-
-                let response;
-                if(id) {
-                    response = await _supabase.from('products').update(payload).eq('id', id);
-                } else {
-                    response = await _supabase.from('products').insert([payload]);
-                }
-
-                if (response.error) throw response.error;
-                
-                alert("✅ Produit mis en ligne !");
+                if (error) throw error;
+                alert("✅ Succès !");
                 location.reload();
             } catch (e) {
                 alert("Erreur : " + e.message);
             }
         }
 
-        function toggleAdmin() {
-            const panel = document.getElementById('admin-panel');
-            panel.classList.toggle('hidden');
-        }
+        function toggleAdmin() { document.getElementById('admin-panel').classList.toggle('hidden'); }
 
         async function loadProducts() {
-            const { data, error } = await _supabase.from('products').select('*').order('id', { ascending: false });
+            const { data } = await _supabase.from('products').select('*').order('id', { ascending: false });
             if (data) {
-                const container = document.getElementById('products-container');
-                container.innerHTML = data.map(p => `
+                document.getElementById('products-container').innerHTML = data.map(p => `
                     <div class="bg-white p-3 rounded-3xl shadow-sm border border-pink-100">
                         <img src="${p.img_main}" class="w-full h-32 object-cover rounded-2xl">
                         <h3 class="font-bold text-xs mt-2">${p.name}</h3>
